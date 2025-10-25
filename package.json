@@ -1,0 +1,17 @@
+{
+  "name": "now-playing",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Roon now playing display in macOS menu bar",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "build:sidecar": "cd sidecar && npm run bundle",
+    "prebuild": "npm run build:sidecar",
+    "test": "cargo test --manifest-path=src-tauri/Cargo.toml"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  }
+}

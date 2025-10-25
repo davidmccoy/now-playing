@@ -1,0 +1,27 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Tauri
+src-tauri/target/
+src-tauri/Cargo.lock
+
+# Sidecar
+sidecar/build/
+sidecar/node_modules/
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Plans
+PLAN.md
