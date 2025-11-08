@@ -2,7 +2,7 @@
 
 A macOS menu bar application that displays currently playing music from [Roon](https://roonlabs.com/) in your menu bar. Built with [Tauri](https://tauri.app/) (Rust) and Node.js.
 
-![License](https://img.shields.io/badge/license-TBD-blue)
+![License](https://img.shields.io/badge/license-MIT-blue)
 ![Platform](https://img.shields.io/badge/platform-macOS-lightgrey)
 
 ## Features
@@ -233,7 +233,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-TBD
+MIT
 
 ## Acknowledgments
 
