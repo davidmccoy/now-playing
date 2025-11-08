@@ -67,8 +67,8 @@ impl Compositor {
         title: &str,
         artist: &str,
     ) -> Result<Vec<u8>> {
-        // Render at 2x resolution for Retina displays for smoother text
-        const SCALE_FACTOR: u32 = 2;
+        // Render at 3x resolution for Retina displays for sharper text
+        const SCALE_FACTOR: u32 = 3;
         const CANVAS_WIDTH: u32 = 250 * SCALE_FACTOR;
         const CANVAS_HEIGHT: u32 = 22 * SCALE_FACTOR;
         const ALBUM_ART_SIZE: u32 = 22 * SCALE_FACTOR;
@@ -101,19 +101,20 @@ impl Compositor {
             let available_width = (CANVAS_WIDTH - TEXT_X_OFFSET as u32 - (5 * SCALE_FACTOR)) as i32;
             let display_text = self.truncate_text(&text, available_width);
 
-            // Draw text at 2x scale for Retina
-            // 42px at 2x = 21px at 1x - matching original Helvetica Neue size
-            let scale = PxScale::from(42.0);
+            // Draw text at 3x scale for Retina
+            // 63px at 3x = 21px at 1x - matching original Helvetica Neue size
+            let scale = PxScale::from(63.0);
 
             // Get text color based on macOS appearance (dark/light mode)
             let text_color = get_text_color();
 
-            // Position text vertically - adjusted for SF Compact metrics
-            let text_y = 1;
-
             // Load font for rendering
             let font = FontRef::try_from_slice(&self.font)
                 .context("Failed to parse font data")?;
+
+            // Position text vertically - scaled for 3x resolution
+            // At 3x: 3px offset = 1px at 1x (matching original positioning)
+            let text_y = 3;
 
             draw_text_mut(
                 &mut canvas,
@@ -176,8 +177,8 @@ impl Compositor {
 
     /// Truncate text to fit within available width
     fn truncate_text(&self, text: &str, max_width: i32) -> String {
-        // Use same scale as rendering (42px at 2x = 21px at 1x)
-        let scale = PxScale::from(42.0);
+        // Use same scale as rendering (63px at 3x = 21px at 1x)
+        let scale = PxScale::from(63.0);
 
         // Measure full text width
         let full_width = self.measure_text_width(text, scale);
