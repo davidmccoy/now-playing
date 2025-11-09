@@ -69,12 +69,11 @@ impl Compositor {
     ) -> Result<Vec<u8>> {
         // Render at 3x resolution for Retina displays for sharper text
         const SCALE_FACTOR: u32 = 3;
-        const MAX_CANVAS_WIDTH: u32 = 250 * SCALE_FACTOR;
+        const MAX_CANVAS_WIDTH: u32 = 500 * SCALE_FACTOR;
         const MIN_CANVAS_WIDTH: u32 = 22 * SCALE_FACTOR;  // Just artwork
         const CANVAS_HEIGHT: u32 = 22 * SCALE_FACTOR;
         const ALBUM_ART_SIZE: u32 = 22 * SCALE_FACTOR;
         const TEXT_X_OFFSET: i32 = 28 * SCALE_FACTOR as i32;
-        const RIGHT_PADDING: u32 = 15 * SCALE_FACTOR;  // Extra padding to prevent text cutoff
 
         // Calculate dynamic canvas width based on text length
         let canvas_width = if !title.is_empty() || !artist.is_empty() {
@@ -82,12 +81,18 @@ impl Compositor {
             let scale = PxScale::from(63.0);
             let text_width = self.measure_text_width(&text, scale);
 
-            // Width = album art + spacing + text + padding
-            // Add extra margin (1.1x) to account for glyph overhang beyond advance width
-            let required_width = ALBUM_ART_SIZE + (TEXT_X_OFFSET as u32 - ALBUM_ART_SIZE) + (text_width * 1.1) as u32 + RIGHT_PADDING;
+            // Width = album art + spacing + text
+            let required_width = ALBUM_ART_SIZE + (TEXT_X_OFFSET as u32 - ALBUM_ART_SIZE) + text_width as u32;
 
             // Cap at maximum width
-            required_width.min(MAX_CANVAS_WIDTH)
+            let final_width = required_width.min(MAX_CANVAS_WIDTH);
+
+            log::debug!(
+                "Canvas sizing: text='{}', text_width={:.1}px, required={}, max={}, final={}",
+                text, text_width, required_width, MAX_CANVAS_WIDTH, final_width
+            );
+
+            final_width
         } else {
             // No text - just show artwork
             MIN_CANVAS_WIDTH
@@ -117,7 +122,7 @@ impl Compositor {
         if !title.is_empty() || !artist.is_empty() {
             // Prepare text: "Title - Artist"
             let text = format!("{} - {}", title, artist);
-            let available_width = (canvas_width - TEXT_X_OFFSET as u32 - RIGHT_PADDING) as i32;
+            let available_width = (canvas_width - TEXT_X_OFFSET as u32) as i32;
             let display_text = self.truncate_text(&text, available_width);
 
             // Draw text at 3x scale for Retina
