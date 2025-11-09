@@ -73,7 +73,7 @@ impl Compositor {
         const MIN_CANVAS_WIDTH: u32 = 22 * SCALE_FACTOR;  // Just artwork
         const CANVAS_HEIGHT: u32 = 22 * SCALE_FACTOR;
         const ALBUM_ART_SIZE: u32 = 22 * SCALE_FACTOR;
-        const TEXT_X_OFFSET: i32 = 28 * SCALE_FACTOR as i32;
+        const TEXT_X_OFFSET: i32 = 32 * SCALE_FACTOR as i32;  // Album art ends at 22, text starts at 32 (10pt gap)
         const RIGHT_PADDING: u32 = 3 * SCALE_FACTOR;  // Small buffer for glyph overhang
 
         // Calculate dynamic canvas width based on text length
