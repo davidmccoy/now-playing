@@ -59,6 +59,12 @@ impl Compositor {
         Ok(Self { font: font_data })
     }
 
+    /// Extract the primary (first) artist from a potentially multi-artist string
+    /// Roon sends multiple artists separated by " / ", but we only want to show the first
+    fn get_primary_artist(artist: &str) -> &str {
+        artist.split(" / ").next().unwrap_or(artist)
+    }
+
     /// Create a menu bar icon with album art and text
     /// Returns PNG bytes
     pub fn create_menu_bar_icon(
@@ -78,7 +84,8 @@ impl Compositor {
 
         // Calculate dynamic canvas width based on text length
         let canvas_width = if !title.is_empty() || !artist.is_empty() {
-            let text = format!("{} - {}", title, artist);
+            let primary_artist = Self::get_primary_artist(artist);
+            let text = format!("{} - {}", title, primary_artist);
             let scale = PxScale::from(63.0);
             let text_width = self.measure_text_width(&text, scale);
 
@@ -122,8 +129,9 @@ impl Compositor {
 
         // Only draw text if we have title or artist
         if !title.is_empty() || !artist.is_empty() {
-            // Prepare text: "Title - Artist"
-            let text = format!("{} - {}", title, artist);
+            // Prepare text: "Title - Artist" (using primary artist only to avoid truncation)
+            let primary_artist = Self::get_primary_artist(artist);
+            let text = format!("{} - {}", title, primary_artist);
             let available_width = (canvas_width - TEXT_X_OFFSET as u32 - RIGHT_PADDING) as i32;
             let display_text = self.truncate_text(&text, available_width);
 

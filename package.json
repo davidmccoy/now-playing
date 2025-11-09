@@ -9,6 +9,7 @@
     "build": "tauri build",
     "build:sidecar": "cd sidecar && npm run bundle",
     "prebuild": "npm run build:sidecar",
+    "predev": "npm run build:sidecar",
     "test": "cargo test --manifest-path=src-tauri/Cargo.toml"
   },
   "devDependencies": {
