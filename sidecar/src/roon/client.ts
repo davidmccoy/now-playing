@@ -83,9 +83,10 @@ export class RoonClient {
    */
   private createRoonApi(): any {
     // Initialize Roon API with extension information
+    const hostname = os.hostname();
     const options: ExtendedRoonApiOptions = {
       extension_id: 'com.nowplaying.menubar',
-      display_name: 'Now Playing Menu Bar',
+      display_name: `Now Playing Menu Bar (${hostname})`,
       display_version: '0.1.0',
       publisher: 'Now Playing',
       email: 'REDACTED_EMAIL',
