@@ -1,8 +1,8 @@
 use anyhow::{Context, Result};
 use tauri::{
     image::Image,
-    menu::{Menu, MenuItem, PredefinedMenuItem, Submenu, CheckMenuItem},
-    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem},
+    tray::TrayIconBuilder,
     AppHandle, Manager, Runtime,
 };
 
@@ -53,119 +53,104 @@ impl TrayManager {
         Ok(())
     }
 
-    /// Build the tray menu with zones submenu (for rebuild)
+    /// Build the tray menu with zones directly in menu (for rebuild)
     fn build_menu_for_rebuild<R: Runtime>(app: &AppHandle<R>, state: &SharedState) -> Result<Menu<R>> {
         let state_guard = state.read();
 
         log::debug!("Rebuilding menu with {} zones", state_guard.all_zones.len());
 
-        // Build zones submenu
-        let zones_submenu = Self::build_zones_submenu(app, &state_guard)?;
+        let menu = Menu::new(app)?;
 
-        // Create separator
+        // Add zone items directly to menu
+        if state_guard.all_zones.is_empty() {
+            let no_zones = MenuItem::with_id(app, "no_zones", "No zones available", false, None::<&str>)?;
+            menu.append(&no_zones)?;
+        } else {
+            for zone in &state_guard.all_zones {
+                let is_preferred = match &state_guard.zone_preference {
+                    ZonePreference::Selected { zone_id, .. } => zone_id == &zone.zone_id,
+                    ZonePreference::Auto => false,
+                };
+
+                let state_str = match zone.state {
+                    PlaybackState::Playing => "Playing",
+                    PlaybackState::Paused => "Paused",
+                    PlaybackState::Stopped => "Stopped",
+                    PlaybackState::Loading => "Loading",
+                };
+
+                let label = format!("{} ({})", zone.display_name, state_str);
+
+                let item = CheckMenuItem::with_id(
+                    app,
+                    &zone.zone_id,
+                    label,
+                    true,
+                    is_preferred,
+                    None::<&str>,
+                )?;
+                menu.append(&item)?;
+            }
+        }
+
+        // Separator and quit
         let separator = PredefinedMenuItem::separator(app)?;
+        menu.append(&separator)?;
 
-        // Create quit item
         let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-
-        // Build final menu
-        let menu = Menu::with_items(app, &[
-            &zones_submenu,
-            &separator,
-            &quit_item,
-        ])?;
+        menu.append(&quit_item)?;
 
         Ok(menu)
     }
 
-    /// Build the tray menu with zones submenu (for initial setup)
+    /// Build the tray menu with zones directly in menu (for initial setup)
     fn build_menu<R: Runtime>(app: &AppHandle<R>, state: &SharedState) -> Result<Menu<R>> {
         let state_guard = state.read();
 
         log::info!("Building menu with {} zones", state_guard.all_zones.len());
 
-        // Build zones submenu
-        let zones_submenu = Self::build_zones_submenu(app, &state_guard)?;
+        let menu = Menu::new(app)?;
 
-        // Create separator
+        // Add zone items directly to menu
+        if state_guard.all_zones.is_empty() {
+            let no_zones = MenuItem::with_id(app, "no_zones", "No zones available", false, None::<&str>)?;
+            menu.append(&no_zones)?;
+        } else {
+            for zone in &state_guard.all_zones {
+                let is_preferred = match &state_guard.zone_preference {
+                    ZonePreference::Selected { zone_id, .. } => zone_id == &zone.zone_id,
+                    ZonePreference::Auto => false,
+                };
+
+                let state_str = match zone.state {
+                    PlaybackState::Playing => "Playing",
+                    PlaybackState::Paused => "Paused",
+                    PlaybackState::Stopped => "Stopped",
+                    PlaybackState::Loading => "Loading",
+                };
+
+                let label = format!("{} ({})", zone.display_name, state_str);
+
+                let item = CheckMenuItem::with_id(
+                    app,
+                    &zone.zone_id,
+                    label,
+                    true,
+                    is_preferred,
+                    None::<&str>,
+                )?;
+                menu.append(&item)?;
+            }
+        }
+
+        // Separator and quit
         let separator = PredefinedMenuItem::separator(app)?;
+        menu.append(&separator)?;
 
-        // Create quit item
         let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-
-        // Build final menu
-        let menu = Menu::with_items(app, &[
-            &zones_submenu,
-            &separator,
-            &quit_item,
-        ])?;
+        menu.append(&quit_item)?;
 
         Ok(menu)
-    }
-
-    /// Build the zones submenu
-    fn build_zones_submenu<R: Runtime>(
-        app: &AppHandle<R>,
-        state_guard: &parking_lot::RwLockReadGuard<crate::types::AppState>,
-    ) -> Result<Submenu<R>> {
-        // Create submenu first
-        let submenu = Submenu::new(app, "Select Zone", true)?;
-
-        if state_guard.all_zones.is_empty() {
-            // No zones available yet
-            let no_zones = MenuItem::with_id(
-                app,
-                "no_zones",
-                "No zones available",
-                false, // disabled
-                None::<&str>,
-            )?;
-
-            submenu.append(&no_zones)?;
-            return Ok(submenu);
-        }
-
-        // Add zone menu items
-        for zone in &state_guard.all_zones {
-            // Check if this is the preferred zone
-            let is_preferred = match &state_guard.zone_preference {
-                ZonePreference::Selected { zone_id, .. } => zone_id == &zone.zone_id,
-                ZonePreference::Auto => false,
-            };
-
-            // Check if this zone is currently being displayed
-            let is_showing = state_guard.active_zone_id.as_ref() == Some(&zone.zone_id);
-            let show_indicator = is_showing && state_guard.is_smart_switched;
-
-            // Format state name
-            let state_str = match zone.state {
-                PlaybackState::Playing => "Playing",
-                PlaybackState::Paused => "Paused",
-                PlaybackState::Stopped => "Stopped",
-                PlaybackState::Loading => "Loading",
-            };
-
-            // Format label
-            let label = if show_indicator {
-                format!("{} ({}) ← Showing", zone.display_name, state_str)
-            } else {
-                format!("{} ({})", zone.display_name, state_str)
-            };
-
-            // Create check menu item and append to submenu
-            let item = CheckMenuItem::with_id(
-                app,
-                &zone.zone_id,
-                label,
-                true,         // enabled
-                is_preferred, // checked
-                None::<&str>,
-            )?;
-
-            submenu.append(&item)?;
-        }
-
-        Ok(submenu)
     }
 
     /// Handle menu events
@@ -241,13 +226,10 @@ impl TrayManager {
 
     /// Rebuild the tray menu (called when zones change or preference changes)
     pub fn rebuild_menu<R: Runtime>(app: &AppHandle<R>, state: &SharedState) -> Result<()> {
-        log::debug!("Rebuilding tray menu");
-
         let new_menu = Self::build_menu_for_rebuild(app, state)?;
 
         if let Some(tray) = app.try_state::<tauri::tray::TrayIcon>() {
             tray.set_menu(Some(new_menu))?;
-            log::debug!("Menu rebuilt and applied to tray");
         }
 
         Ok(())
@@ -256,9 +238,9 @@ impl TrayManager {
     /// Create an initial placeholder icon
     fn create_initial_icon(&self) -> Result<Image> {
         let icon_bytes = self.compositor.create_menu_bar_icon(
-            None,
-            "Now Playing",
-            "Waiting for music...",
+            None,  // No artwork - will show placeholder
+            "",    // No title
+            "",    // No artist
         )?;
 
         Image::from_bytes(&icon_bytes)
@@ -335,7 +317,23 @@ impl TrayManager {
                     }
                 }
                 PlaybackState::Stopped => {
-                    // Don't update icon when stopped
+                    // Show placeholder when stopped (same as paused)
+                    let icon_bytes = manager.compositor.create_menu_bar_icon(
+                        None,  // No artwork - will show purple placeholder
+                        "",    // No title
+                        "",    // No artist
+                    ).unwrap_or_else(|e| {
+                        log::error!("Failed to create stopped icon: {}, using fallback", e);
+                        manager.create_fallback_icon()
+                            .expect("Fallback icon creation should never fail")
+                    });
+
+                    let image = Image::from_bytes(&icon_bytes)
+                        .context("Failed to create image from bytes")?;
+
+                    if let Some(tray) = app.try_state::<tauri::tray::TrayIcon>() {
+                        tray.set_icon(Some(image))?;
+                    }
                 }
             }
         }

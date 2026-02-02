@@ -290,19 +290,23 @@ impl SidecarManager {
                 };
 
                 // Only update tray icon if this was the selected zone
+                // Must run on main thread for macOS compatibility
                 if should_update_icon {
-                    TrayManager::update_icon(app, state.clone())?;
+                    let app_clone = app.clone();
+                    let state_clone = state.clone();
+                    let _ = app.run_on_main_thread(move || {
+                        if let Err(e) = TrayManager::update_icon(&app_clone, state_clone) {
+                            log::error!("Failed to update icon: {}", e);
+                        }
+                    });
                 }
             }
             SidecarMessage::ZoneList { zones } => {
                 log::debug!("Zone list received: {} zones", zones.len());
 
                 // Compute derived values while holding the lock
-                let (zones_changed, new_zones_count, needs_rebuild) = {
+                let (needs_rebuild, needs_icon_update) = {
                     let mut state_guard = state.write();
-
-                    // Capture old zone count for initial load detection
-                    let old_zones_count = state_guard.all_zones.len();
 
                     // Convert ZoneInfo to Zone
                     let now = Instant::now();
@@ -333,47 +337,67 @@ impl SidecarManager {
                     // Check if zones actually changed (to avoid unnecessary rebuilds)
                     let zones_changed = Self::zones_changed(&state_guard.all_zones, &new_zones);
 
-                    let new_zones_count = new_zones.len();
-
-                    log::debug!("zones_changed={}, old_count={}, new_count={}",
-                        zones_changed, old_zones_count, new_zones_count);
-
-                    state_guard.all_zones = new_zones;
-
-                    // Determine if we need to rebuild the menu
-                    // Only rebuild if zones actually changed AND enough time has passed (debounce)
-                    let needs_rebuild = if zones_changed {
-                        let should_rebuild = match state_guard.last_menu_rebuild {
-                            None => true,
-                            Some(last_rebuild) => last_rebuild.elapsed().as_secs() >= 1,
-                        };
-
-                        if should_rebuild {
-                            log::debug!("Zones changed, rebuilding menu");
-                            true
+                    // Check if active zone changed to stopped/paused - need to update icon
+                    let needs_icon_update = if let Some(active_id) = &state_guard.active_zone_id {
+                        if let Some(new_zone) = new_zones.iter().find(|z| &z.zone_id == active_id) {
+                            // Update current_track state from zone list
+                            if let Some(ref mut current) = state_guard.current_track {
+                                if current.state != new_zone.state {
+                                    current.state = new_zone.state.clone();
+                                    true
+                                } else {
+                                    false
+                                }
+                            } else {
+                                false
+                            }
                         } else {
-                            log::debug!("Zones changed but debounced (too soon)");
                             false
                         }
                     } else {
                         false
                     };
 
-                    (zones_changed, new_zones_count, needs_rebuild)
+                    state_guard.all_zones = new_zones;
+
+                    // Determine if we need to rebuild the menu
+                    // Use simple debounce: rebuild if zones changed and 1 second has passed
+                    let needs_rebuild = if zones_changed {
+                        match state_guard.last_menu_rebuild {
+                            None => true, // First rebuild ever
+                            Some(last_rebuild) => last_rebuild.elapsed().as_secs() >= 1,
+                        }
+                    } else {
+                        false
+                    };
+
+                    (needs_rebuild, needs_icon_update)
                 };
 
                 if needs_rebuild {
-                    log::debug!("Rebuilding menu after zone change");
-                    if let Err(e) = TrayManager::rebuild_menu(app, state) {
-                        log::error!("Failed to rebuild menu: {}", e);
-                    } else {
-                        let mut state_guard = state.write();
-                        state_guard.last_menu_rebuild = Some(Instant::now());
-                    }
+                    // Must run on main thread for macOS compatibility
+                    let app_clone = app.clone();
+                    let state_clone = state.clone();
+                    let _ = app.run_on_main_thread(move || {
+                        if let Err(e) = TrayManager::rebuild_menu(&app_clone, &state_clone) {
+                            log::error!("Failed to rebuild menu: {}", e);
+                        } else {
+                            let mut state_guard = state_clone.write();
+                            state_guard.last_menu_rebuild = Some(Instant::now());
+                        }
+                    });
                 }
 
-                // Suppress unused variable warnings
-                let _ = (zones_changed, new_zones_count);
+                // Update icon if active zone's state changed (e.g., to stopped)
+                if needs_icon_update {
+                    let app_clone = app.clone();
+                    let state_clone = state.clone();
+                    let _ = app.run_on_main_thread(move || {
+                        if let Err(e) = TrayManager::update_icon(&app_clone, state_clone) {
+                            log::error!("Failed to update icon after zone state change: {}", e);
+                        }
+                    });
+                }
             }
             SidecarMessage::Status { state: status_str, message } => {
                 log::info!("Sidecar status: {} - {:?}", status_str, message);

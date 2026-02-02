@@ -109,8 +109,8 @@ export class RoonClient {
         this.handleCoreUnpaired(core);
       },
 
-      // Log level (can be set to 'all' for debugging)
-      log_level: 'all',
+      // Log level - 'none' to prevent debug messages on stdout
+      log_level: 'none',
 
       // Pairing persistence - saves auth tokens for automatic reconnection
       set_persisted_state: (state: any) => {
