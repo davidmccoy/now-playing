@@ -1,8 +1,8 @@
 {
-  "name": "now-playing",
+  "name": "croon",
   "version": "0.1.0",
   "private": true,
-  "description": "Roon now playing display in macOS menu bar",
+  "description": "Display currently playing track from Roon in macOS menu bar",
   "scripts": {
     "tauri": "tauri",
     "dev": "tauri dev",

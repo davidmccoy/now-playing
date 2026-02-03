@@ -206,14 +206,66 @@ impl Compositor {
         image::imageops::overlay(canvas, overlay, x, y);
     }
 
-    /// Draw a placeholder colored square when no artwork is available
+    /// Draw a monochrome play symbol with circle when no artwork is available
+    /// Adapts to system dark/light mode
     fn draw_placeholder_art(&self, canvas: &mut RgbaImage, size: u32) {
-        // Draw a purple square as placeholder
-        let placeholder_color = Rgba([147, 51, 234, 255]); // Purple
+        let icon_color = get_text_color();
+        let size_f = size as f32;
+        let center = size_f / 2.0;
+        let radius = size_f * 0.45;
+        let circle_thickness = size_f * 0.06;
 
+        // Draw circle outline
         for py in 0..size {
             for px in 0..size {
-                canvas.put_pixel(px, py, placeholder_color);
+                let dx = px as f32 - center;
+                let dy = py as f32 - center;
+                let dist = (dx * dx + dy * dy).sqrt();
+
+                // Draw if within the ring (between inner and outer radius)
+                if dist >= radius - circle_thickness && dist <= radius {
+                    canvas.put_pixel(px, py, icon_color);
+                }
+            }
+        }
+
+        // Draw play triangle pointing RIGHT
+        // Vertices:
+        // - Left-top: (35%, 30%)
+        // - Left-bottom: (35%, 70%)
+        // - Right point: (70%, 50%)
+        let left_x = size_f * 0.38;
+        let right_x = size_f * 0.68;
+        let top_y = size_f * 0.30;
+        let bottom_y = size_f * 0.70;
+        let center_y = size_f * 0.50;
+
+        // Fill triangle using scanline algorithm
+        for py in 0..size {
+            let y = py as f32;
+
+            // Check if this scanline intersects the triangle
+            if y < top_y || y > bottom_y {
+                continue;
+            }
+
+            // Triangle has left edge vertical, right edge is a point
+            // - Top-left at (left_x, top_y)
+            // - Bottom-left at (left_x, bottom_y)
+            // - Right point at (right_x, center_y)
+
+            let x_end = if y <= center_y {
+                // Upper half: line from (left_x, top_y) to (right_x, center_y)
+                let t = (y - top_y) / (center_y - top_y);
+                left_x + t * (right_x - left_x)
+            } else {
+                // Lower half: line from (right_x, center_y) to (left_x, bottom_y)
+                let t = (y - center_y) / (bottom_y - center_y);
+                right_x + t * (left_x - right_x)
+            };
+
+            for px in (left_x as u32)..=(x_end as u32).min(size - 1) {
+                canvas.put_pixel(px, py, icon_color);
             }
         }
     }

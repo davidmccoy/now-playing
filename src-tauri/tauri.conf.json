@@ -1,7 +1,7 @@
 {
-  "productName": "Now Playing",
+  "productName": "Croon",
   "version": "0.1.0",
-  "identifier": "com.nowplaying.app",
+  "identifier": "com.davidmccoy.croon",
   "build": {
     "beforeDevCommand": "",
     "beforeBuildCommand": "",

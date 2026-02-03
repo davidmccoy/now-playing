@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Now Playing Sidecar - Roon API Integration
+ * Croon Sidecar - Roon API Integration
  *
  * This sidecar process connects to Roon Core, subscribes to now playing updates,
  * and emits JSON messages to stdout for consumption by the main Rust application.
@@ -18,7 +18,7 @@ import * as output from './output.js';
  * Main entry point
  */
 function main(): void {
-  output.info('=== Now Playing Sidecar Starting ===');
+  output.info('=== Croon Sidecar Starting ===');
   output.info(`Node version: ${process.version}`);
   output.info(`Platform: ${process.platform} ${process.arch}`);
 

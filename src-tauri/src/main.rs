@@ -16,7 +16,7 @@ fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         .init();
 
-    log::info!("Starting Now Playing menu bar app");
+    log::info!("Starting Croon menu bar app");
 
     // Hide from Dock and Cmd+Tab (macOS only)
     #[cfg(target_os = "macos")]
