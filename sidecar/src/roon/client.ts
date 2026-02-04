@@ -104,10 +104,11 @@ export class RoonClient {
    */
   private createRoonApi(): any {
     // Initialize Roon API with extension information
-    const hostname = os.hostname();
+    // Use hostname in extension_id so each machine registers as a separate extension
+    const hostname = os.hostname().toLowerCase().replace(/[^a-z0-9-]/g, '-');
     const options: ExtendedRoonApiOptions = {
-      extension_id: 'com.macaroon.roon',
-      display_name: `Macaroon (${hostname})`,
+      extension_id: `com.macaroon.menubar.${hostname}`,
+      display_name: `Macaroon (${os.hostname()})`,
       display_version: '0.1.0',
       publisher: 'Macaroon',
       email: 'REDACTED_EMAIL',
