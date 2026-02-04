@@ -1,4 +1,4 @@
-# Macaroon - macOS Menu Bar App for Roon
+# Macaroon &mdash; macOS Menu Bar App for Roon
 
 A macOS menu bar application that displays currently playing music from [Roon](https://roonlabs.com/) in your menu bar. Built with [Tauri](https://tauri.app/) (Rust) and Node.js.
 
@@ -23,13 +23,24 @@ A macOS menu bar application that displays currently playing music from [Roon](h
 
 ### First Launch (Important!)
 
-Since Macaroon is not signed with an Apple Developer certificate, macOS will block it by default. To open it:
+Since Macaroon is not signed with an Apple Developer certificate, macOS will block it. Depending on your macOS version, you'll see one of two errors:
 
-1. **First attempt**: Double-click Macaroon. You'll see a warning that it "cannot be opened because the developer cannot be verified"
-2. **Allow the app**: Go to **System Settings → Privacy & Security**
-3. Scroll down to the Security section where you'll see "Macaroon was blocked from use"
-4. Click **Open Anyway**
-5. In the confirmation dialog, click **Open**
+**If you see "Macaroon is damaged and can't be opened":**
+
+Open Terminal and run:
+
+```bash
+xattr -cr /Applications/Macaroon.app
+```
+
+This removes the quarantine attribute that macOS applies to downloaded files. After running this command, launch Macaroon again.
+
+**If you see "cannot be opened because the developer cannot be verified" or some variation of that message:**
+
+1. Go to **System Settings → Privacy & Security**
+2. Scroll down to the Security section where you'll see "Macaroon was blocked from use"
+3. Click **Open Anyway**
+4. In the confirmation dialog, click **Open**
 
 You only need to do this once. After that, Macaroon will open normally.
 
@@ -39,7 +50,7 @@ After launching Macaroon:
 
 1. The app will appear in your menu bar with a macaroon icon
 2. It will automatically search for Roon Core on your network
-3. When found, you need to authorize the extension in Roon:
+3. To connect Macaroon to Roon Core, you need to authorize the extension in Roon:
    - Open **Roon**
    - Go to **Settings → Extensions**
    - Find **"Macaroon"** and click **Enable**
