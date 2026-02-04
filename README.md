@@ -1,4 +1,4 @@
-# Now Playing - macOS Menu Bar App
+# Macaroon - macOS Menu Bar App for Roon
 
 A macOS menu bar application that displays currently playing music from [Roon](https://roonlabs.com/) in your menu bar. Built with [Tauri](https://tauri.app/) (Rust) and Node.js.
 
@@ -9,44 +9,102 @@ A macOS menu bar application that displays currently playing music from [Roon](h
 
 - **Real-time Display**: Shows currently playing track information (title, artist, album) directly in your macOS menu bar
 - **Album Artwork**: Displays album art thumbnail alongside track information
+- **Zone Selection**: Select which Roon zone to display when you have multiple zones
 - **Automatic Discovery**: Automatically discovers and connects to Roon Core on your network
 - **Manual Connection**: Supports direct connection to Roon Core via environment variables
-- **System Integration**: Adapts text color based on macOS appearance (dark/light mode)
-- **Retina Support**: High-resolution rendering for crisp text and images on Retina displays
-
-## How It Works
-
-The application consists of two components:
-
-1. **Tauri App (Rust)**: Manages the macOS menu bar icon and renders the display
-
-   - Image compositor with album art and text rendering
-   - System tray integration
-   - Helvetica Neue font for native macOS appearance
-   - Automatic dark/light mode detection
-
-2. **Node.js Sidecar**: Connects to Roon Core and streams playback data
-   - Roon API integration for real-time updates
-   - Auto-discovery of Roon Core on local network
-   - Album artwork fetching and encoding
-   - JSON-based communication with Rust app
-
-## Prerequisites
-
-- macOS 10.15 (Catalina) or later
-- [Roon Core](https://roonlabs.com/) running on your network
-- Rust 1.90.0+ (for building from source)
-- Node.js 20.18.0+ (for building from source)
-- Xcode Command Line Tools
 
 ## Installation
 
-### From Source
+### From GitHub Releases
+
+1. Download the latest `.dmg` file from the [Releases](https://github.com/davidmccoy/now-playing/releases) page
+2. Open the `.dmg` and drag **Macaroon** to your Applications folder
+3. Launch Macaroon from Applications
+
+### First Launch (Important!)
+
+Since Macaroon is not signed with an Apple Developer certificate, macOS will block it by default. To open it:
+
+1. **First attempt**: Double-click Macaroon. You'll see a warning that it "cannot be opened because the developer cannot be verified"
+2. **Allow the app**: Go to **System Settings → Privacy & Security**
+3. Scroll down to the Security section where you'll see "Macaroon was blocked from use"
+4. Click **Open Anyway**
+5. In the confirmation dialog, click **Open**
+
+You only need to do this once. After that, Macaroon will open normally.
+
+### Authorizing in Roon
+
+After launching Macaroon:
+
+1. The app will appear in your menu bar with a macaroon icon
+2. It will automatically search for Roon Core on your network
+3. When found, you need to authorize the extension in Roon:
+   - Open **Roon**
+   - Go to **Settings → Extensions**
+   - Find **"Macaroon"** and click **Enable**
+
+Once authorized, the menu bar will display your currently playing track with album artwork.
+
+## Usage
+
+### Menu Bar Display
+
+The menu bar shows:
+
+- Album artwork (or macaroon icon when nothing is playing)
+- Track title and primary artist
+- Automatically truncates long titles with ellipsis
+- Updates in real-time as tracks change
+
+### Zone Selection
+
+If you have multiple Roon zones (different rooms/outputs):
+
+1. Click the menu bar icon
+2. Select the zone you want to display from the list
+3. The selected zone is remembered between sessions
+
+### Launch at Login
+
+To have Macaroon start automatically when you log in:
+
+1. Click the menu bar icon
+2. Check **"Launch at Login"**
+
+### Quitting
+
+Click the menu bar icon and select **Quit** to exit the application.
+
+## Manual Connection
+
+If auto-discovery doesn't find your Roon Core, you can specify it manually:
+
+```bash
+ROON_HOST=192.168.1.100 /Applications/Macaroon.app/Contents/MacOS/Macaroon
+```
+
+Or with a custom port:
+
+```bash
+ROON_HOST=192.168.1.100 ROON_PORT=9100 /Applications/Macaroon.app/Contents/MacOS/Macaroon
+```
+
+## Building from Source
+
+### Prerequisites
+
+- macOS 10.15 (Catalina) or later
+- Rust 1.75.0+
+- Node.js 20.18.0+
+- Xcode Command Line Tools
+
+### Build Steps
 
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/now-playing.git
+git clone https://github.com/davidmccoy/now-playing.git
 cd now-playing
 ```
 
@@ -77,159 +135,63 @@ npm run build
 
 The built application will be in `src-tauri/target/release/bundle/`.
 
-## Usage
+## How It Works
 
-### First Run
+The application uses a **sidecar architecture**:
 
-1. Launch the application
-2. Look for the menu bar icon in the top-right corner of your screen
-3. The app will automatically search for Roon Core on your network
-4. When found, you'll need to authorize the extension in Roon:
-   - Open Roon
-   - Go to Settings → Extensions
-   - Find "Now Playing Menu Bar" and click "Enable"
+1. **Tauri App (Rust)**: Manages the macOS menu bar icon and renders the display
+   - Image compositor with album art and text rendering
+   - System tray integration with zone selection
+   - SF Pro system font for native macOS appearance
+   - Automatic dark/light mode detection
 
-Once authorized, the menu bar will display your currently playing track.
-
-### Manual Connection
-
-If auto-discovery doesn't work, you can manually specify your Roon Core address:
-
-```bash
-ROON_HOST=192.168.1.100 npm run dev
-```
-
-Or for a built app:
-
-```bash
-ROON_HOST=192.168.1.100 ROON_PORT=9100 /path/to/Now\ Playing.app/Contents/MacOS/Now\ Playing
-```
-
-### Menu Bar Display
-
-The menu bar shows:
-
-- Album artwork (22x22px thumbnail)
-- Track title and artist name
-- Automatically truncates long titles with ellipsis
-- Updates in real-time as tracks change
-
-## Project Structure
-
-```
-now-playing/
-├── src-tauri/              # Rust/Tauri application
-│   ├── src/
-│   │   ├── main.rs         # Application entry point
-│   │   ├── compositor.rs   # Image generation & text rendering
-│   │   ├── sidecar.rs      # Node.js sidecar process management
-│   │   ├── tray.rs         # System tray management
-│   │   ├── state.rs        # Application state
-│   │   └── types.rs        # Data types
-│   ├── assets/
-│   │   └── fonts/
-│   │       └── HelveticaNeue.ttc  # System font for native appearance
-│   └── icons/              # Application icons
-├── sidecar/                # Node.js Roon API integration
-│   ├── src/
-│   │   ├── index.ts        # Sidecar entry point
-│   │   ├── output.ts       # JSON output formatting
-│   │   └── roon/
-│   │       ├── client.ts   # Roon API client
-│   │       ├── transport.ts # Transport/playback management
-│   │       └── image.ts    # Album artwork handling
-│   └── package.json
-└── package.json
-```
-
-## Technical Details
-
-### Architecture
-
-The application uses a **sidecar architecture** where:
-
-- The Rust app manages the UI and system integration
-- The Node.js sidecar handles Roon API communication
-- Communication happens via stdout/stdin using JSON messages
-
-### Dependencies
-
-**Rust:**
-
-- `tauri 2.0` - Application framework with system tray support
-- `image 0.25` - Image manipulation
-- `imageproc 0.25` - Drawing primitives
-- `ab_glyph 0.2` - Font rendering
-- `tokio 1.0` - Async runtime
-
-**Node.js:**
-
-- `node-roon-api` - Roon Core discovery and connection
-- `node-roon-api-transport` - Playback state monitoring
-- `node-roon-api-image` - Album artwork fetching
-
-### Performance
-
-- **Memory usage**: ~80 MB idle
-- **CPU usage**: <1% during normal operation
-- **Icon generation**: <10ms per update
-- **Network**: Minimal bandwidth (only metadata and small album art thumbnails)
-
-## Development
-
-### Running Tests
-
-```bash
-npm test
-```
-
-### Building the Sidecar
-
-```bash
-npm run build:sidecar
-```
-
-This creates a standalone binary that's bundled with the Tauri app.
-
-### Debugging
-
-Enable verbose logging:
-
-```bash
-RUST_LOG=debug npm run dev
-```
-
-The sidecar logs to stderr, which is captured and displayed by the Rust app.
+2. **Node.js Sidecar**: Connects to Roon Core and streams playback data
+   - Roon API integration for real-time updates
+   - Auto-discovery of Roon Core on local network
+   - Album artwork fetching and encoding
+   - JSON-based communication with Rust app
 
 ## Troubleshooting
 
 ### App doesn't appear in menu bar
 
-- Check terminal output for errors
-- Ensure Roon Core is running and accessible
-- Verify the sidecar built successfully (`sidecar/build/index.js` exists)
+- Check if another menu bar item is covering it
+- Look for the macaroon icon or album artwork
+- Try quitting and relaunching
 
 ### Can't connect to Roon Core
 
-- Ensure Roon Core is on the same network
+- Ensure Roon Core is running and on the same network
 - Check firewall settings (Roon uses port 9100)
 - Try manual connection with `ROON_HOST` environment variable
 - Verify the extension is enabled in Roon Settings → Extensions
 
+### Extension not showing in Roon
+
+- Make sure Macaroon is running
+- Check that your Mac and Roon Core are on the same network
+- Restart both Macaroon and Roon
+
 ### No album artwork
 
-- Album artwork requires the Roon API Image service
-- Some tracks may not have artwork available
-- A purple placeholder square is shown when artwork is unavailable
+- Some tracks may not have artwork in your library
+- A macaroon silhouette is shown when no artwork is available
 
-### Text color issues
+### Text hard to read
 
-- The app automatically detects macOS appearance mode
-- If text is hard to read, check System Preferences → General → Appearance
+- Macaroon detects dark/light mode at startup
+- If you switch modes, restart Macaroon for correct colors
 
-## Contributing
+## Configuration
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Macaroon stores its configuration in:
+
+- **macOS**: `~/Library/Application Support/Macaroon/`
+
+This includes:
+
+- Roon pairing credentials (so you don't need to re-authorize)
+- Selected zone preference
 
 ## License
 
@@ -239,7 +201,7 @@ MIT
 
 - Built with [Tauri](https://tauri.app/)
 - Uses [Roon API](https://github.com/RoonLabs/node-roon-api)
-- Font: Helvetica Neue (macOS system font)
+- Font: SF Pro (macOS system font)
 
 ## Related Projects
 

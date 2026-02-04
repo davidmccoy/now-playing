@@ -1,14 +1,13 @@
 // Prevents additional console window on Windows in release
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod autostart;
 mod compositor;
 mod sidecar;
 mod state;
 mod tray;
 mod types;
 
-use std::thread;
-use std::time::Duration;
 use tauri::Manager;
 
 fn main() {
@@ -16,7 +15,7 @@ fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         .init();
 
-    log::info!("Starting Croon menu bar app");
+    log::info!("Starting Macaroon menu bar app");
 
     // Hide from Dock and Cmd+Tab (macOS only)
     #[cfg(target_os = "macos")]
@@ -88,35 +87,13 @@ fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     // Store sidecar manager in app state for cleanup
     app.manage(sidecar_manager);
 
-    // Spawn a thread to periodically check for dark mode changes
-    // This ensures the icon updates even when music is paused
-    let app_handle = app.handle().clone();
-    let state_for_appearance = state.clone();
-    thread::spawn(move || {
-        loop {
-            thread::sleep(Duration::from_secs(5));
-
-            // Check if dark mode changed
-            let current_dark_mode = matches!(dark_light::detect(), dark_light::Mode::Dark);
-            let needs_update = {
-                let state_guard = state_for_appearance.read();
-                state_guard.last_dark_mode != Some(current_dark_mode) && state_guard.current_track.is_some()
-            };
-
-            if needs_update {
-                log::debug!("Dark mode changed, triggering icon update");
-                let app_clone = app_handle.clone();
-                let state_clone = state_for_appearance.clone();
-                if let Err(e) = app_handle.run_on_main_thread(move || {
-                    if let Err(e) = tray::TrayManager::update_icon(&app_clone, &state_clone) {
-                        log::error!("Failed to update icon after dark mode change: {}", e);
-                    }
-                }) {
-                    log::error!("Failed to dispatch dark mode icon update: {}", e);
-                }
-            }
-        }
-    });
+    // Detect dark mode once at startup and store it
+    {
+        let current_dark_mode = matches!(dark_light::detect(), dark_light::Mode::Dark);
+        let mut state_guard = state.write();
+        state_guard.last_dark_mode = Some(current_dark_mode);
+        log::info!("Detected system appearance: {} mode", if current_dark_mode { "dark" } else { "light" });
+    }
 
     Ok(())
 }

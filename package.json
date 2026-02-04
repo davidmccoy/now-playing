@@ -1,5 +1,5 @@
 {
-  "name": "croon",
+  "name": "macaroon",
   "version": "0.1.0",
   "private": true,
   "description": "Display currently playing track from Roon in macOS menu bar",

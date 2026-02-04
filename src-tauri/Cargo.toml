@@ -1,5 +1,5 @@
 [package]
-name = "croon"
+name = "macaroon"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.75"
@@ -43,6 +43,9 @@ parking_lot = "0.12"
 # Signal handling
 ctrlc = "3.4"
 nix = { version = "0.29", features = ["signal"] }
+
+# Launch at login
+auto-launch = "0.6"
 
 [profile.release]
 opt-level = "z"        # Optimize for size

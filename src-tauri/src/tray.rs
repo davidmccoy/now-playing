@@ -6,6 +6,7 @@ use tauri::{
     AppHandle, Manager, Runtime,
 };
 
+use crate::autostart;
 use crate::compositor::Compositor;
 use crate::state::SharedState;
 use crate::types::{ConnectionStatus, PlaybackState, ZonePreference};
@@ -123,10 +124,22 @@ impl TrayManager {
             }
         }
 
-        // Separator and quit
+        // Separator before settings
         let separator = PredefinedMenuItem::separator(app)?;
         menu.append(&separator)?;
 
+        // Launch at Login checkbox
+        let launch_at_login = CheckMenuItem::with_id(
+            app,
+            "launch_at_login",
+            "Launch at Login",
+            true,
+            autostart::is_enabled(),
+            None::<&str>,
+        )?;
+        menu.append(&launch_at_login)?;
+
+        // Quit
         let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
         menu.append(&quit_item)?;
 
@@ -144,6 +157,20 @@ impl TrayManager {
         match menu_id {
             "quit" => {
                 app.exit(0);
+            }
+            "launch_at_login" => {
+                match autostart::toggle() {
+                    Ok(new_state) => {
+                        log::info!("Launch at login toggled to: {}", new_state);
+                        // Rebuild menu to update checkbox state
+                        if let Err(e) = Self::rebuild_menu(app, state) {
+                            log::error!("Failed to rebuild menu after toggle: {}", e);
+                        }
+                    }
+                    Err(e) => {
+                        log::error!("Failed to toggle launch at login: {}", e);
+                    }
+                }
             }
             "no_zones" | "status" => {
                 // Disabled items, do nothing

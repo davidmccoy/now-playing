@@ -57,10 +57,10 @@ function getConfigPath(): string {
 
   if (process.platform === 'darwin') {
     // macOS: use standard Application Support directory
-    configDir = path.join(homeDir, 'Library', 'Application Support', 'Croon');
+    configDir = path.join(homeDir, 'Library', 'Application Support', 'Macaroon');
   } else {
     // Other platforms: use ~/.config
-    configDir = path.join(homeDir, '.config', 'croon');
+    configDir = path.join(homeDir, '.config', 'macaroon');
   }
 
   // Ensure directory exists with restrictive permissions (owner only)
@@ -106,10 +106,10 @@ export class RoonClient {
     // Initialize Roon API with extension information
     const hostname = os.hostname();
     const options: ExtendedRoonApiOptions = {
-      extension_id: 'com.davidmccoy.croon',
-      display_name: `Croon (${hostname})`,
+      extension_id: 'com.macaroon.roon',
+      display_name: `Macaroon (${hostname})`,
       display_version: '0.1.0',
-      publisher: 'Croon',
+      publisher: 'Macaroon',
       email: 'REDACTED_EMAIL',
       website: 'REDACTED_WEBSITE',
 

@@ -1,7 +1,7 @@
 {
-  "productName": "Croon",
+  "productName": "Macaroon",
   "version": "0.1.0",
-  "identifier": "com.davidmccoy.croon",
+  "identifier": "com.macaroon.app",
   "build": {
     "beforeDevCommand": "",
     "beforeBuildCommand": "",

@@ -206,66 +206,99 @@ impl Compositor {
         image::imageops::overlay(canvas, overlay, x, y);
     }
 
-    /// Draw a monochrome play symbol with circle when no artwork is available
+    /// Draw a macaroon silhouette (front view) when no artwork is available
     /// Adapts to system dark/light mode
     fn draw_placeholder_art(&self, canvas: &mut RgbaImage, size: u32) {
         let icon_color = get_text_color();
         let size_f = size as f32;
-        let center = size_f / 2.0;
-        let radius = size_f * 0.45;
-        let circle_thickness = size_f * 0.06;
+        let stroke_width = (size_f * 0.055).max(2.0);
 
-        // Draw circle outline
-        for py in 0..size {
-            for px in 0..size {
-                let dx = px as f32 - center;
-                let dy = py as f32 - center;
-                let dist = (dx * dx + dy * dy).sqrt();
-
-                // Draw if within the ring (between inner and outer radius)
-                if dist >= radius - circle_thickness && dist <= radius {
-                    canvas.put_pixel(px, py, icon_color);
-                }
-            }
-        }
-
-        // Draw play triangle pointing RIGHT
-        // Vertices:
-        // - Left-top: (35%, 30%)
-        // - Left-bottom: (35%, 70%)
-        // - Right point: (70%, 50%)
-        let left_x = size_f * 0.38;
-        let right_x = size_f * 0.68;
-        let top_y = size_f * 0.30;
-        let bottom_y = size_f * 0.70;
+        let center_x = size_f * 0.50;
         let center_y = size_f * 0.50;
 
-        // Fill triangle using scanline algorithm
+        // Macaroon dimensions
+        let width = size_f * 0.85;
+        let half_width = width / 2.0;
+
+        // Heights for each section
+        let top_shell_height = size_f * 0.28;
+        let filling_height = size_f * 0.12;
+        let bottom_shell_height = size_f * 0.28;
+        let total_height = top_shell_height + filling_height + bottom_shell_height;
+
+        // Y positions
+        let top_y = center_y - total_height / 2.0;
+        let top_shell_bottom = top_y + top_shell_height;
+        let filling_bottom = top_shell_bottom + filling_height;
+        let bottom_y = filling_bottom + bottom_shell_height;
+
+        // Corner radius for rounded rectangles
+        let shell_radius = top_shell_height / 2.0;
+        let filling_radius = filling_height / 2.0;
+
         for py in 0..size {
-            let y = py as f32;
+            for px in 0..size {
+                let x = px as f32;
+                let y = py as f32;
 
-            // Check if this scanline intersects the triangle
-            if y < top_y || y > bottom_y {
-                continue;
-            }
+                // Helper: check if point is on the outline of a rounded rectangle
+                let on_rounded_rect_outline = |rect_top: f32, rect_bottom: f32, radius: f32| -> bool {
+                    let rect_height = rect_bottom - rect_top;
+                    let rect_center_y = rect_top + rect_height / 2.0;
 
-            // Triangle has left edge vertical, right edge is a point
-            // - Top-left at (left_x, top_y)
-            // - Bottom-left at (left_x, bottom_y)
-            // - Right point at (right_x, center_y)
+                    // Check if outside the bounding box
+                    if x < center_x - half_width - stroke_width || x > center_x + half_width + stroke_width {
+                        return false;
+                    }
+                    if y < rect_top - stroke_width || y > rect_bottom + stroke_width {
+                        return false;
+                    }
 
-            let x_end = if y <= center_y {
-                // Upper half: line from (left_x, top_y) to (right_x, center_y)
-                let t = (y - top_y) / (center_y - top_y);
-                left_x + t * (right_x - left_x)
-            } else {
-                // Lower half: line from (right_x, center_y) to (left_x, bottom_y)
-                let t = (y - center_y) / (bottom_y - center_y);
-                right_x + t * (left_x - right_x)
-            };
+                    // Distance from center x
+                    let dx = (x - center_x).abs();
 
-            for px in (left_x as u32)..=(x_end as u32).min(size - 1) {
-                canvas.put_pixel(px, py, icon_color);
+                    // The rounded rect: straight sides with rounded left/right caps
+                    // Left and right edges are semicircles
+
+                    // Check if in the corner regions (semicircle caps)
+                    if dx > half_width - radius {
+                        // We're in the rounded cap region
+                        let cap_center_x = center_x + (half_width - radius) * (x - center_x).signum();
+                        let cap_center_y = rect_center_y;
+                        let dist = ((x - cap_center_x).powi(2) + (y - cap_center_y).powi(2)).sqrt();
+                        return dist >= radius - stroke_width / 2.0 && dist <= radius + stroke_width / 2.0;
+                    }
+
+                    // Straight top/bottom edges
+                    if dx <= half_width - radius {
+                        let on_top = (y - rect_top).abs() <= stroke_width / 2.0;
+                        let on_bottom = (y - rect_bottom).abs() <= stroke_width / 2.0;
+                        return on_top || on_bottom;
+                    }
+
+                    false
+                };
+
+                let mut draw = false;
+
+                // Top shell (tall rounded rectangle)
+                if on_rounded_rect_outline(top_y, top_shell_bottom, shell_radius) {
+                    draw = true;
+                }
+
+                // Filling (thin rounded rectangle)
+                if on_rounded_rect_outline(top_shell_bottom, filling_bottom, filling_radius) {
+                    draw = true;
+                }
+
+                // Bottom shell (tall rounded rectangle)
+                if on_rounded_rect_outline(filling_bottom, bottom_y, shell_radius) {
+                    draw = true;
+                }
+
+                if draw {
+                    canvas.put_pixel(px, py, icon_color);
+                }
             }
         }
     }
